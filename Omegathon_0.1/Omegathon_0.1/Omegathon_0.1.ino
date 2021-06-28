@@ -3,7 +3,7 @@ byte team = 0;
 
 bool isPuck = false;
 
-enum comStates {INERT, SEND_BEAM, RECEIVE_BEAM, RESOLVE};
+enum comStates {INERT, GO, RESOLVE};
 byte comState = INERT;
 byte internalState = INERT;
 
@@ -38,17 +38,6 @@ void loop() {
 
 }
 
-void puckDisplay() {
-  setColor(OFF);
-  setColorOnFace(makeColorHSB(hues[team], 255, 255), 0);
-  setColorOnFace(makeColorHSB(hues[team], 255, 255), 3);
-
-}
-
-void fieldDisplay() {
-  setColor(dim(WHITE, 100));
-
-}
 
 void puckLoop() {
 
@@ -64,25 +53,54 @@ void fieldLoop() {
   bool hasBeamNeighbor = false;
   byte changeToBeam;
 
-  setColor(dim(WHITE, 100)); //debug visuals
-  if (buttonSingleClicked() && isAlone()) {
-    isPuck = true;
-    team = random(5) + 1;
-  }
+  if (comState == INERT) {
+    setColor(dim(WHITE, 100)); //debug visuals
+    if (buttonSingleClicked() && isAlone()) {
+      isPuck = true;
+      team = random(5) + 1;
+    }
 
-  FOREACH_FACE(f) {
-    if (!isValueReceivedOnFaceExpired(f)) {
-      byte neighborData = getLastValueReceivedOnFace(f);
-      if (getIsPuck(neighborData)) {
-        byte neighborTeam = getTeam(neighborData);
-        setColorOnFace(makeColorHSB(hues[neighborTeam], 255, 255), f);
-        setColorOnFace(makeColorHSB(hues[neighborTeam], 255, 255), (f + 3)%6);
+    FOREACH_FACE(f) {
+      if (!isValueReceivedOnFaceExpired(f)) {
+        byte neighborData = getLastValueReceivedOnFace(f);
+        if (getIsPuck(neighborData)) {
+          if (getComState(neighborData) == INERT) {
+            byte neighborTeam = getTeam(neighborData);
+            beamDisplay(neighborTeam, f);
+
+          }
+        }
+        if (getComState(neighborData) == GO) {
+          byte neighborTeam = getTeam(neighborData);
+          beamDisplay(neighborTeam, f);
+
+        }
       }
     }
 
+
+
   }
+
+
 }
 
+
+void puckDisplay() {
+  setColor(OFF);
+  setColorOnFace(makeColorHSB(hues[team], 255, 255), 0);
+  setColorOnFace(makeColorHSB(hues[team], 255, 255), 3);
+
+}
+
+void fieldDisplay() {
+  setColor(dim(WHITE, 100));
+}
+
+void beamDisplay(byte neighborTeam, int f) {
+  setColorOnFace(makeColorHSB(hues[neighborTeam], 255, 255), f);
+  setColorOnFace(makeColorHSB(hues[neighborTeam], 255, 255), (f + 3) % 6);
+}
 bool getIsPuck(byte val) {
   return (val >> 5);
 }
